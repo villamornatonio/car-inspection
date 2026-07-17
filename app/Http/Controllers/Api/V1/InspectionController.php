@@ -54,14 +54,11 @@ class InspectionController extends Controller
         $cacheKey = 'inspections_' . ($carId ?? 'all');
         $inspections = Cache::remember($cacheKey, 3600, function () use ($carId) {
             $paginated = $this->inspectionService->getAllPaginated($carId);
-            // Convert paginator items to array for caching (avoids serialization issues with models)
-            return collect($paginated->items())->map(static fn ($inspection) => $inspection->toArray())->all();
+            // Serialize via JSON to ensure fully resolved plain arrays (no nested Resource objects)
+            return json_decode(InspectionResource::collection($paginated->items())->toJson(), true);
         });
 
-        // Convert cached arrays back to models for resource formatting
-        $inspectionModels = collect($inspections)->map(static fn ($data) => Inspection::make($data));
-
-        return $this->success(InspectionResource::collection($inspectionModels));
+        return $this->success($inspections);
     }
 
     /**

@@ -48,14 +48,11 @@ class CarController extends Controller
     {
         $cars = Cache::remember('cars_paginated', 3600, function () {
             $paginated = $this->carService->getAllPaginated(15);
-            // Convert paginator items to array for caching (avoids serialization issues with models)
-            return collect($paginated->items())->map(static fn ($car) => $car->toArray())->all();
+            // Serialize via JSON to ensure fully resolved plain arrays (no nested Resource objects)
+            return json_decode(CarResource::collection($paginated->items())->toJson(), true);
         });
 
-        // Convert cached arrays back to models for resource formatting
-        $carModels = collect($cars)->map(static fn ($data) => Car::make($data));
-
-        return $this->success(CarResource::collection($carModels));
+        return $this->success($cars);
     }
 
     /**
