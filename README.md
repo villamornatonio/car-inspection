@@ -56,11 +56,13 @@ Use the convenient `test.sh` script for all testing needs:
 
 ### Test Output
 
-The test suite includes 16 tests covering:
+The test suite includes 20 tests covering:
 - ✅ User authentication (Sanctum token issuance)
-- ✅ Car CRUD operations (list, create async via Horizon)
-- ✅ Inspection CRUD operations (list, create)
+- ✅ Car endpoints (list, create async via Horizon)
+- ✅ Inspection endpoints (list, create)
 - ✅ Authorization middleware enforcement (with and without auth)
+- ✅ Validation error handling for missing required fields (422)
+- ✅ Store failure handling when service/repository throws (500)
 - ✅ API response envelope format validation
 - ✅ Redis caching (cache hits, cache invalidation, per-filter cache keys)
 
@@ -180,11 +182,13 @@ Request → Controller → Service → Repository → Model → Database
 
 ### Test Coverage
 
-16 tests (50 assertions) covering:
+20 tests (74 assertions) covering:
 - ✅ User authentication (Sanctum tokens)
-- ✅ Car CRUD operations (list with/without auth, create async)
-- ✅ Inspection CRUD operations (list with/without auth, create)
+- ✅ Car endpoints (list with/without auth, create async)
+- ✅ Inspection endpoints (list with/without auth, create)
 - ✅ Authorization middleware (401 on all protected endpoints)
+- ✅ Validation errors for required store fields (422)
+- ✅ Explicit controller-level failure handling on store endpoints (500)
 - ✅ API response envelope format
 - ✅ Redis caching (cache hits, invalidation on write, per-carId cache keys)
 
@@ -232,13 +236,24 @@ curl -X GET http://localhost:8080/api/v1/cars \
 
 ### Response Format
 
-All responses follow standard envelope:
+Successful and handled server-error responses use this envelope:
 
 ```json
 {
   "success": true,
   "message": "Human-readable message",
   "data": {}
+}
+```
+
+Validation failures (HTTP 422) follow Laravel's validation response shape:
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "fieldName": ["The fieldName field is required."]
+  }
 }
 ```
 
@@ -278,7 +293,7 @@ php artisan horizon                 # Job processor
 - [x] Core app scaffolding (models, migrations, factories, seeders)
 - [x] API controllers with Sanctum authentication
 - [x] Async job processing via Horizon
-- [x] Comprehensive test suite (16 tests, 50 assertions)
+- [x] Comprehensive test suite (20 tests, 74 assertions)
 - [x] Docker Compose stack (app, MySQL, Redis, Nginx, Horizon)
 - [x] OpenAPI/Swagger documentation
 - [x] Setup and teardown scripts

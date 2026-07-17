@@ -195,6 +195,36 @@ paths:
                         type: object
         '422':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: The given data was invalid.
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        '500':
+          description: Failed to create car
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to create car
+                  errors:
+                    type: array
+                    items: {}
   /api/v1/inspections:
     get:
       summary: List all inspections with optional car filtering
@@ -304,3 +334,33 @@ paths:
                     $ref: '#/components/schemas/Inspection'
         '422':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: The given data was invalid.
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        '500':
+          description: Failed to create inspection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to create inspection
+                  errors:
+                    type: array
+                    items: {}

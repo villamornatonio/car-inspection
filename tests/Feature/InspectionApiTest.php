@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Car;
 use App\Models\User;
+use App\Services\InspectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\TestCase;
 
 class InspectionApiTest extends TestCase
@@ -54,5 +56,45 @@ class InspectionApiTest extends TestCase
         $payload = ['carId' => $car->id, 'wipers' => true, 'engineSound' => true, 'headlights' => true];
         $res = $this->postJson('/api/v1/inspections', $payload);
         $res->assertStatus(201);
+    }
+
+    public function test_store_returns_422_when_required_fields_are_missing(): void
+    {
+        $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/inspections', []);
+
+        $response->assertStatus(422)
+            ->assertJsonStructure(['message', 'errors'])
+            ->assertJsonValidationErrors(['carId', 'wipers', 'engineSound', 'headlights']);
+    }
+
+    public function test_store_returns_500_when_service_fails(): void
+    {
+        $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);
+        Sanctum::actingAs($user);
+
+        $car = Car::factory()->create();
+
+        $mock = Mockery::mock(InspectionService::class);
+        $mock->shouldReceive('create')
+            ->once()
+            ->andThrow(new \RuntimeException('Inspection repository unavailable'));
+        $this->app->instance(InspectionService::class, $mock);
+
+        $response = $this->postJson('/api/v1/inspections', [
+            'carId' => $car->id,
+            'wipers' => true,
+            'engineSound' => true,
+            'headlights' => true,
+        ]);
+
+        $response->assertStatus(500)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Failed to create inspection',
+                'errors' => [],
+            ]);
     }
 }

@@ -8,7 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\TestCase;
+use App\Services\CarService;
 
 class CarApiTest extends TestCase
 {
@@ -57,5 +59,49 @@ class CarApiTest extends TestCase
         $res->assertStatus(202);
 
         Bus::assertDispatched(CreateCarJob::class);
+    }
+
+    public function test_store_returns_422_when_required_fields_are_missing(): void
+    {
+        Bus::fake();
+        $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/cars', []);
+
+        $response->assertStatus(422)
+            ->assertJsonStructure(['message', 'errors'])
+            ->assertJsonValidationErrors(['name', 'make', 'model', 'year']);
+
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_store_returns_500_when_service_fails(): void
+    {
+        Bus::fake();
+        $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);
+        Sanctum::actingAs($user);
+
+        $mock = Mockery::mock(CarService::class);
+        $mock->shouldReceive('createAsync')
+            ->once()
+            ->andThrow(new \RuntimeException('Queue unavailable'));
+        $this->app->instance(CarService::class, $mock);
+
+        $response = $this->postJson('/api/v1/cars', [
+            'name' => 'Test Car',
+            'make' => 'Toyota',
+            'model' => 'Corolla',
+            'year' => 2020,
+        ]);
+
+        $response->assertStatus(500)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Failed to create car',
+                'errors' => [],
+            ]);
+
+        Bus::assertNothingDispatched();
     }
 }

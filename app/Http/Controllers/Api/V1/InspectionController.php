@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInspectionRequest;
 use App\Http\Resources\InspectionResource;
-use App\Models\Inspection;
 use App\Services\InspectionService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * InspectionController.
@@ -74,16 +74,22 @@ class InspectionController extends Controller
      */
     public function store(StoreInspectionRequest $request): \Illuminate\Http\JsonResponse
     {
-        $data = $request->validatedForModel();
-        $inspection = $this->inspectionService->create($data);
+        try {
+            $data = $request->validatedForModel();
+            $inspection = $this->inspectionService->create($data);
 
-        // Invalidate all inspection caches
-        Cache::forget('inspections_all');
-        // Also forget the car-specific cache for this inspection
-        if (isset($data['car_id'])) {
-            Cache::forget('inspections_' . $data['car_id']);
+            // Invalidate all inspection caches
+            Cache::forget('inspections_all');
+            // Also forget the car-specific cache for this inspection
+            if (isset($data['car_id'])) {
+                Cache::forget('inspections_' . $data['car_id']);
+            }
+
+            return $this->created(new InspectionResource($inspection));
+        } catch (Throwable $e) {
+            report($e);
+
+            return $this->error('Failed to create inspection', [], 500);
         }
-
-        return $this->created(new InspectionResource($inspection));
     }
 }

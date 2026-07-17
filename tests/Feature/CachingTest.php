@@ -14,6 +14,14 @@ class CachingTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Prevent stale in-memory cache keys from previous tests affecting assertions.
+        Cache::flush();
+    }
+
     public function test_1_cars_list_response_is_cached(): void
     {
         $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);

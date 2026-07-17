@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCarRequest;
 use App\Http\Resources\CarResource;
-use App\Models\Car;
 use App\Services\CarService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * CarController.
@@ -77,10 +77,16 @@ class CarController extends Controller
      */
     public function store(StoreCarRequest $request): \Illuminate\Http\JsonResponse
     {
-        $payload = $request->validated();
-        $result = $this->carService->createAsync($payload);
-        Cache::forget('cars_paginated');
+        try {
+            $payload = $request->validated();
+            $result = $this->carService->createAsync($payload);
+            Cache::forget('cars_paginated');
 
-        return $this->accepted($result);
+            return $this->accepted($result);
+        } catch (Throwable $e) {
+            report($e);
+
+            return $this->error('Failed to create car', [], 500);
+        }
     }
 }
