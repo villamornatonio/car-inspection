@@ -125,6 +125,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Car'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - id: 1
+                    name: "Toyota Corolla"
+                    make: "Toyota"
+                    model: "Corolla"
+                    year: 2023
+                    createdAt: "2026-07-17T09:20:37.268Z"
         '401':
           description: Unauthorized - missing or invalid token
     post:
@@ -222,6 +232,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Inspection'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - id: 5
+                    carId: 1
+                    wipers: true
+                    engineSound: true
+                    headlights: true
+                    performedAt: null
+                    createdAt: "2026-07-17T09:20:37.268Z"
+                    car:
+                      id: 1
+                      name: "Toyota Corolla"
+                      make: "Toyota"
+                      model: "Corolla"
+                      year: 2023
+                      createdAt: "2026-07-17T09:20:30.100Z"
         '401':
           description: Unauthorized - missing or invalid token
     post:
