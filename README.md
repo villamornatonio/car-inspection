@@ -1,6 +1,6 @@
 Cars & Inspections API — Production-Grade Laravel 11 REST API
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/villamornatonio/car-inspection/actions/workflows/ci.yml/badge.svg)](https://github.com/villamornatonio/car-inspection/actions/workflows/ci.yml)
 
 A production-grade Laravel 11 REST API for managing vehicles and their inspections. Features include Laravel Sanctum authentication, Horizon-based asynchronous job processing, comprehensive test coverage, Docker Compose deployment, and OpenAPI/Swagger documentation.
 
@@ -56,14 +56,15 @@ Use the convenient `test.sh` script for all testing needs:
 
 ### Test Output
 
-The test suite includes 9 feature tests covering:
+The test suite includes 16 tests covering:
 - ✅ User authentication (Sanctum token issuance)
 - ✅ Car CRUD operations (list, create async via Horizon)
 - ✅ Inspection CRUD operations (list, create)
-- ✅ Authorization middleware enforcement
+- ✅ Authorization middleware enforcement (with and without auth)
 - ✅ API response envelope format validation
+- ✅ Redis caching (cache hits, cache invalidation, per-filter cache keys)
 
-All tests use SQLite in-memory database for isolation and speed.
+Tests use a dedicated MySQL database (`laravel_test`) for isolation. The array cache driver is used in tests to avoid Redis state leaking between runs.
 
 ### Manual Test Commands
 
@@ -71,9 +72,9 @@ If you prefer manual commands without the script:
 
 **In Docker:**
 ```bash
-docker exec cars_app ./vendor/bin/phpunit
-docker exec cars_app ./vendor/bin/phpunit tests/Feature/AuthApiTest.php
-docker exec cars_app ./vendor/bin/phpunit --coverage-html=coverage/
+docker exec cars_app php artisan test
+docker exec cars_app php artisan test tests/Feature/AuthApiTest.php
+docker exec cars_app php artisan test --filter "CarApiTest"
 ```
 
 **Locally (requires PHP 8.4+, Composer, MySQL 8.0+, Redis 7+):**
@@ -82,7 +83,7 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-./vendor/bin/phpunit
+php artisan test
 ```
 
 ## Code Quality & PSR Compliance
@@ -115,7 +116,7 @@ Check and fix code style issues using PHP CS Fixer:
 - **App (PHP 8.4-FPM)**: Laravel 11 API with Sanctum authentication
 - **Nginx (1.25-Alpine)**: Reverse proxy and static file server for Swagger UI
 - **MySQL 8.0**: Primary database for cars, inspections, and users
-- **Redis 7**: Cache store and queue broker for Horizon
+- **Redis 7**: Cache store (1-hour TTL on GET endpoints) and queue broker for Horizon
 - **Horizon**: Background job processor (CreateCarJob for async vehicle creation)
 
 ### Design Patterns
@@ -179,12 +180,13 @@ Request → Controller → Service → Repository → Model → Database
 
 ### Test Coverage
 
-9 feature tests covering:
+16 tests (50 assertions) covering:
 - ✅ User authentication (Sanctum tokens)
-- ✅ Car CRUD operations (list, create async)
-- ✅ Inspection CRUD operations (list, create)
-- ✅ Authorization middleware
+- ✅ Car CRUD operations (list with/without auth, create async)
+- ✅ Inspection CRUD operations (list with/without auth, create)
+- ✅ Authorization middleware (401 on all protected endpoints)
 - ✅ API response envelope format
+- ✅ Redis caching (cache hits, invalidation on write, per-carId cache keys)
 
 ## API Documentation
 
@@ -234,10 +236,9 @@ All responses follow standard envelope:
 
 ```json
 {
-  "success": true|false,
+  "success": true,
   "message": "Human-readable message",
-  "data": {...},
-  "errors": []
+  "data": {}
 }
 ```
 
@@ -265,7 +266,7 @@ php artisan migrate
 php artisan db:seed
 
 # Run tests
-./vendor/bin/phpunit
+php artisan test
 
 # Start development servers in separate terminals
 php artisan serve                    # API on :8000
@@ -277,9 +278,10 @@ php artisan horizon                 # Job processor
 - [x] Core app scaffolding (models, migrations, factories, seeders)
 - [x] API controllers with Sanctum authentication
 - [x] Async job processing via Horizon
-- [x] Comprehensive test suite (9 tests, 14 assertions)
+- [x] Comprehensive test suite (16 tests, 50 assertions)
 - [x] Docker Compose stack (app, MySQL, Redis, Nginx, Horizon)
 - [x] OpenAPI/Swagger documentation
 - [x] Setup and teardown scripts
 - [x] Test runner script with multiple modes
 - [x] PHP CS Fixer for PSR-4/PSR-12 compliance checking
+- [x] Redis caching on GET endpoints with cache invalidation on write

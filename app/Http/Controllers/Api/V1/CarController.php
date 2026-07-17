@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCarRequest;
 use App\Http\Resources\CarResource;
+use App\Models\Car;
 use App\Services\CarService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * CarController.
@@ -35,6 +37,7 @@ class CarController extends Controller
      * List all cars with pagination.
      *
      * Retrieves paginated car records and returns them as a JSON API response.
+     * Results are cached for 3600 seconds (1 hour) to improve performance.
      * Each car is transformed using the CarResource formatter for consistent output.
      *
      * @param Request $request The HTTP request (supports pagination parameters)
@@ -43,9 +46,16 @@ class CarController extends Controller
      */
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        $cars = $this->carService->getAllPaginated(15);
+        $cars = Cache::remember('cars_paginated', 3600, function () {
+            $paginated = $this->carService->getAllPaginated(15);
+            // Convert paginator items to array for caching (avoids serialization issues with models)
+            return collect($paginated->items())->map(fn ($car) => $car->toArray())->all();
+        });
 
-        return $this->success(CarResource::collection($cars));
+        // Convert cached arrays back to models for resource formatting
+        $carModels = collect($cars)->map(fn ($data) => Car::make($data));
+
+        return $this->success(CarResource::collection($carModels));
     }
 
     /**
@@ -54,6 +64,7 @@ class CarController extends Controller
      * Accepts validated car data and dispatches an async CreateCarJob to the Redis queue.
      * Returns immediately with a tracking ID (HTTP 202 Accepted), allowing the client
      * to poll for job status. The actual car creation happens asynchronously via Horizon.
+     * Invalidates the cars list cache to ensure fresh data on next GET request.
      *
      * **Async Flow:**
      * 1. Request arrives with validated car data
@@ -71,6 +82,7 @@ class CarController extends Controller
     {
         $payload = $request->validated();
         $result = $this->carService->createAsync($payload);
+        Cache::forget('cars_paginated');
 
         return $this->accepted($result);
     }

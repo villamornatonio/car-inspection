@@ -60,7 +60,7 @@ run_full_tests() {
     check_docker
     echo -e "${BLUE}🧪 Running full test suite...${NC}"
     echo ""
-    docker exec cars_app ./vendor/bin/phpunit
+    docker exec cars_app php artisan test
 }
 
 # Run tests with coverage
@@ -68,7 +68,7 @@ run_coverage() {
     check_docker
     echo -e "${BLUE}📊 Running tests with coverage report...${NC}"
     echo ""
-    docker exec cars_app ./vendor/bin/phpunit --coverage-html=coverage/
+    docker exec cars_app php artisan test --coverage-html=coverage/
     echo ""
     echo -e "${GREEN}✅ Coverage report generated at: coverage/index.html${NC}"
 }
@@ -85,7 +85,7 @@ run_file_tests() {
     
     echo -e "${BLUE}🧪 Running tests from: $file${NC}"
     echo ""
-    docker exec cars_app ./vendor/bin/phpunit "$file"
+    docker exec cars_app php artisan test "$file"
 }
 
 # Run tests with filter
@@ -94,7 +94,7 @@ run_filter_tests() {
     check_docker
     echo -e "${BLUE}🧪 Running tests matching: $filter${NC}"
     echo ""
-    docker exec cars_app ./vendor/bin/phpunit --filter "$filter"
+    docker exec cars_app php artisan test --filter "$filter"
 }
 
 # Run tests locally
@@ -114,7 +114,7 @@ run_local_tests() {
         echo ""
     fi
     
-    ./vendor/bin/phpunit
+    php artisan test
 }
 
 # Watch tests (requires entr or fswatch)
@@ -135,9 +135,9 @@ run_watch_tests() {
     echo ""
     
     if command -v entr &> /dev/null; then
-        find tests -name "*.php" | entr -c ./vendor/bin/phpunit
+        find tests -name "*.php" | entr -c php artisan test
     else
-        fswatch -o tests | xargs -I {} ./vendor/bin/phpunit
+        fswatch -o tests | xargs -I {} php artisan test
     fi
 }
 

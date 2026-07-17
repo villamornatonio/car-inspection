@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInspectionRequest;
 use App\Http\Resources\InspectionResource;
+use App\Models\Inspection;
 use App\Services\InspectionService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * InspectionController.
@@ -36,6 +38,8 @@ class InspectionController extends Controller
      * List all inspections.
      *
      * Retrieves paginated inspections with optional filtering by car ID.
+     * Results are cached for 3600 seconds (1 hour) to improve performance.
+     * Cache key includes carId to provide separate caches for different filters.
      * Each inspection includes its associated car information.
      *
      * @param Request $request The HTTP request containing optional query parameters:
@@ -46,10 +50,18 @@ class InspectionController extends Controller
      */
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        $carId = $request->query('carId');
-        $inspections = $this->inspectionService->getAllPaginated($carId);
+        $carId = $request->query('carId') ? (int)$request->query('carId') : null;
+        $cacheKey = 'inspections_' . ($carId ?? 'all');
+        $inspections = Cache::remember($cacheKey, 3600, function () use ($carId) {
+            $paginated = $this->inspectionService->getAllPaginated($carId);
+            // Convert paginator items to array for caching (avoids serialization issues with models)
+            return collect($paginated->items())->map(fn ($inspection) => $inspection->toArray())->all();
+        });
 
-        return $this->success(InspectionResource::collection($inspections));
+        // Convert cached arrays back to models for resource formatting
+        $inspectionModels = collect($inspections)->map(fn ($data) => Inspection::make($data));
+
+        return $this->success(InspectionResource::collection($inspectionModels));
     }
 
     /**
@@ -57,6 +69,7 @@ class InspectionController extends Controller
      *
      * Creates a new inspection record with validated data from the request.
      * Returns the created inspection with HTTP 201 Created status.
+     * Invalidates all inspection caches to ensure fresh data on next GET request.
      *
      * @param StoreInspectionRequest $request The validated inspection request
      *
@@ -66,6 +79,13 @@ class InspectionController extends Controller
     {
         $data = $request->validatedForModel();
         $inspection = $this->inspectionService->create($data);
+        
+        // Invalidate all inspection caches
+        Cache::forget('inspections_all');
+        // Also forget the car-specific cache for this inspection
+        if (isset($data['car_id'])) {
+            Cache::forget('inspections_' . $data['car_id']);
+        }
 
         return $this->created(new InspectionResource($inspection));
     }

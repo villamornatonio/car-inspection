@@ -14,9 +14,36 @@ class CarApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_index_requires_auth(): void
+    public function test_get_cars_without_auth_returns_401(): void
     {
-        $this->getJson('/api/v1/cars')->assertStatus(401);
+        $response = $this->getJson('/api/v1/cars');
+
+        $response->assertStatus(401)
+                 ->assertJsonStructure(['message']);
+    }
+
+    public function test_get_cars_with_auth_returns_200(): void
+    {
+        $user = User::create(['name' => 'T', 'email' => 'a@b.com', 'password' => Hash::make('password')]);
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/v1/cars');
+
+        $response->assertStatus(200)
+                 ->assertJsonStructure(['success', 'message', 'data']);
+    }
+
+    public function test_post_car_without_auth_returns_401(): void
+    {
+        $response = $this->postJson('/api/v1/cars', [
+            'name'  => 'Test Car',
+            'make'  => 'Toyota',
+            'model' => 'Corolla',
+            'year'  => 2023,
+        ]);
+
+        $response->assertStatus(401)
+                 ->assertJsonStructure(['message']);
     }
 
     public function test_store_dispatches_job(): void

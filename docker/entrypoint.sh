@@ -30,8 +30,8 @@ if [ ! -d "vendor" ]; then
   composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
-# Set correct permissions
-chown -R www:www /var/www/html
+# Set correct permissions (skip .git to avoid permission issues with committed files)
+chown -R www:www /var/www/html --exclude=.git 2>/dev/null || true
 
 # Run migrations and optionally seed
 php artisan migrate --force || true
