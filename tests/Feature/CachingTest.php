@@ -48,7 +48,7 @@ class CachingTest extends TestCase
             'carId' => $car->id,
             'wipers' => true,
             'engineSound' => true,
-            'headlights' => true
+            'headlights' => true,
         ])->assertStatus(201);
 
         // First request - populates cache
@@ -78,10 +78,10 @@ class CachingTest extends TestCase
             'carId' => $car1->id,
             'wipers' => true,
             'engineSound' => true,
-            'headlights' => true
+            'headlights' => true,
         ]);
         $createResponse->assertStatus(201);
-        
+
         // Verify the inspection was actually created in DB
         $this->assertDatabaseHas('inspections', [
             'car_id' => $car1->id,
@@ -129,7 +129,7 @@ class CachingTest extends TestCase
             'name' => 'New Car',
             'make' => 'Toyota',
             'model' => 'Corolla',
-            'year' => 2023
+            'year' => 2023,
         ])->assertStatus(202);
 
         // Verify cache key was forgotten
@@ -148,7 +148,7 @@ class CachingTest extends TestCase
             'carId' => $car->id,
             'wipers' => true,
             'engineSound' => true,
-            'headlights' => true
+            'headlights' => true,
         ])->assertStatus(201);
 
         // Get inspections list (populates cache)
@@ -163,7 +163,7 @@ class CachingTest extends TestCase
             'carId' => $car->id,
             'wipers' => true,
             'engineSound' => true,
-            'headlights' => true
+            'headlights' => true,
         ])->assertStatus(201);
 
         // Verify cache key was forgotten

@@ -19,7 +19,7 @@ class CarApiTest extends TestCase
         $response = $this->getJson('/api/v1/cars');
 
         $response->assertStatus(401)
-                 ->assertJsonStructure(['message']);
+            ->assertJsonStructure(['message']);
     }
 
     public function test_get_cars_with_auth_returns_200(): void
@@ -30,7 +30,7 @@ class CarApiTest extends TestCase
         $response = $this->getJson('/api/v1/cars');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['success', 'message', 'data']);
+            ->assertJsonStructure(['success', 'message', 'data']);
     }
 
     public function test_post_car_without_auth_returns_401(): void
@@ -43,7 +43,7 @@ class CarApiTest extends TestCase
         ]);
 
         $response->assertStatus(401)
-                 ->assertJsonStructure(['message']);
+            ->assertJsonStructure(['message']);
     }
 
     public function test_store_dispatches_job(): void

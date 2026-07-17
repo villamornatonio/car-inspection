@@ -18,7 +18,7 @@ class InspectionApiTest extends TestCase
         $response = $this->getJson('/api/v1/inspections');
 
         $response->assertStatus(401)
-                 ->assertJsonStructure(['message']);
+            ->assertJsonStructure(['message']);
     }
 
     public function test_get_inspections_with_auth_returns_200(): void
@@ -29,7 +29,7 @@ class InspectionApiTest extends TestCase
         $response = $this->getJson('/api/v1/inspections');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['success', 'message', 'data']);
+            ->assertJsonStructure(['success', 'message', 'data']);
     }
 
     public function test_post_inspection_without_auth_returns_401(): void
@@ -42,7 +42,7 @@ class InspectionApiTest extends TestCase
         ]);
 
         $response->assertStatus(401)
-                 ->assertJsonStructure(['message']);
+            ->assertJsonStructure(['message']);
     }
 
     public function test_store_creates_inspection(): void

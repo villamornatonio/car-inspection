@@ -50,16 +50,16 @@ class InspectionController extends Controller
      */
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        $carId = $request->query('carId') ? (int)$request->query('carId') : null;
+        $carId = $request->query('carId') ? (int) $request->query('carId') : null;
         $cacheKey = 'inspections_' . ($carId ?? 'all');
         $inspections = Cache::remember($cacheKey, 3600, function () use ($carId) {
             $paginated = $this->inspectionService->getAllPaginated($carId);
             // Convert paginator items to array for caching (avoids serialization issues with models)
-            return collect($paginated->items())->map(fn ($inspection) => $inspection->toArray())->all();
+            return collect($paginated->items())->map(static fn ($inspection) => $inspection->toArray())->all();
         });
 
         // Convert cached arrays back to models for resource formatting
-        $inspectionModels = collect($inspections)->map(fn ($data) => Inspection::make($data));
+        $inspectionModels = collect($inspections)->map(static fn ($data) => Inspection::make($data));
 
         return $this->success(InspectionResource::collection($inspectionModels));
     }
@@ -79,7 +79,7 @@ class InspectionController extends Controller
     {
         $data = $request->validatedForModel();
         $inspection = $this->inspectionService->create($data);
-        
+
         // Invalidate all inspection caches
         Cache::forget('inspections_all');
         // Also forget the car-specific cache for this inspection
