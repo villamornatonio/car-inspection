@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: Cars & Inspections API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  schemas:
+    Car:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    Inspection:
+      type: object
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        wipers:
+          type: boolean
+        engineSound:
+          type: boolean
+        headlights:
+          type: boolean
+        performedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+paths:
+  /api/v1/auth/token:
+    post:
+      summary: Obtain a bearer token (Sanctum)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Token issued
+  /api/v1/cars:
+    get:
+      summary: List cars
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create car (async)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                make:
+                  type: string
+                model:
+                  type: string
+                year:
+                  type: integer
+      responses:
+        '202':
+          description: Accepted
+  /api/v1/inspections:
+    get:
+      summary: List inspections
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create inspection (sync)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                carId:
+                  type: integer
+                wipers:
+                  type: boolean
+                engineSound:
+                  type: boolean
+                headlights:
+                  type: boolean
+                performedAt:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Created

@@ -1,0 +1,307 @@
+openapi: 3.0.3
+info:
+  title: Cars & Inspections API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  schemas:
+    Car:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    Inspection:
+      type: object
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        wipers:
+          type: boolean
+        engineSound:
+          type: boolean
+        headlights:
+          type: boolean
+        performedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        car:
+          $ref: '#/components/schemas/Car'
+paths:
+  /api/v1/auth/token:
+    post:
+      summary: Obtain a bearer token (Sanctum)
+      description: Authenticate with email and password to receive a bearer token. Include this token in subsequent requests via Authorization header.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "demo@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password"
+      responses:
+        '200':
+          description: Token issued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Token issued"
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "1|txoY7Fbq6iC4RWF35oAqmbyUKSqOmLEkzE5l5D1a774533bf"
+        '401':
+          description: Invalid credentials
+  /api/v1/cars:
+    get:
+      summary: List all cars with pagination
+      description: Retrieve paginated list of cars. Each car includes id, name, make, model, year, and createdAt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (default 1)
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of results per page (default 15)
+          schema:
+            type: integer
+            example: 15
+      responses:
+        '200':
+          description: Successfully retrieved cars
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Car'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      per_page:
+                        type: integer
+                      current_page:
+                        type: integer
+        '401':
+          description: Unauthorized - missing or invalid token
+    post:
+      summary: Create a new car (async via Horizon job queue)
+      description: Creates a car asynchronously. Returns HTTP 202 with tracking ID. Actual creation happens within 1-3 seconds via Horizon.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - make
+                - model
+                - year
+              properties:
+                name:
+                  type: string
+                  example: "Test Sedan"
+                make:
+                  type: string
+                  example: "Toyota"
+                model:
+                  type: string
+                  example: "Corolla"
+                year:
+                  type: integer
+                  example: 2018
+      responses:
+        '202':
+          description: Car creation job accepted and queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Accepted"
+                  data:
+                    type: object
+                    properties:
+                      trackingId:
+                        type: string
+                        format: uuid
+                        example: "d8b4069f-3a16-44e6-90bd-14c411d13be9"
+                      status:
+                        type: string
+                        example: "queued"
+                      payload:
+                        type: object
+        '422':
+          description: Validation error
+  /api/v1/inspections:
+    get:
+      summary: List all inspections with optional car filtering
+      description: Retrieve paginated list of inspections. Optionally filter by car ID. Each inspection includes id, carId, wipers, engineSound, headlights, performedAt, and related car data.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: carId
+          in: query
+          description: Filter inspections by car ID (optional)
+          schema:
+            type: integer
+            example: 1
+        - name: page
+          in: query
+          description: Page number for pagination (default 1)
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of results per page (default 15)
+          schema:
+            type: integer
+            example: 15
+      responses:
+        '200':
+          description: Successfully retrieved inspections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inspection'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      per_page:
+                        type: integer
+                      current_page:
+                        type: integer
+        '401':
+          description: Unauthorized - missing or invalid token
+    post:
+      summary: Create a new inspection
+      description: Creates an inspection record synchronously. All checks (wipers, engineSound, headlights) are boolean flags indicating pass/fail status.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - carId
+                - wipers
+                - engineSound
+                - headlights
+              properties:
+                carId:
+                  type: integer
+                  example: 1
+                wipers:
+                  type: boolean
+                  example: true
+                engineSound:
+                  type: boolean
+                  example: true
+                headlights:
+                  type: boolean
+                  example: true
+                performedAt:
+                  type: string
+                  format: date-time
+                  example: "2025-03-12T10:15:00Z"
+                  description: Optional ISO 8601 timestamp
+      responses:
+        '201':
+          description: Inspection created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Created"
+                  data:
+                    $ref: '#/components/schemas/Inspection'
+        '422':
+          description: Validation error
