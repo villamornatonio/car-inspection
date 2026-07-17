@@ -18,8 +18,8 @@ This script will:
 - ✅ Copy `.env.example` to `.env` (if needed)
 - ✅ Build Docker images
 - ✅ Start all services (app, MySQL, Redis, Nginx, Horizon)
-- ✅ Run database migrations
-- ✅ Seed demo data
+- ✅ Reset database schema (`migrate:fresh`)
+- ✅ Seed deterministic demo data
 
 **Endpoints:**
 - 🌐 **API Base**: http://localhost:8080/api/v1
@@ -178,6 +178,58 @@ The service layer encapsulates business logic and coordinates between repositori
 Request → Controller → Service → Repository → Model → Database
                           ↓
                       Job Dispatch (Horizon)
+```
+
+## Thought Process
+
+- Favor predictable local setup and testing, so scripts are the primary entrypoints (`setup.sh`, `test.sh`, `setdown.sh`).
+- Keep controllers thin and move business behavior to services/repositories for easier testing and extension.
+- Use async processing only where it adds value (`POST /cars` via Horizon), while keeping read paths simple.
+- Treat test coverage as executable documentation for auth, validation, error handling, and caching behavior.
+
+## Notable Design Choices
+
+- **Layered architecture**: Controller → Service → Repository separation for maintainability and testability.
+- **Async write path for cars**: car creation is queued through Horizon to model real-world background processing.
+- **Token-based API security**: Sanctum bearer auth protects all resource endpoints.
+- **Cache-first read endpoints**: list endpoints cache responses with write-time invalidation to reduce DB load.
+- **Containerized runtime**: Docker Compose provides consistent app/DB/Redis/Horizon environment.
+
+## Assumptions Made
+
+- API clients can handle eventual consistency for async car creation (HTTP 202 then read-after-process).
+- Redis is available in runtime for cache and queue usage.
+- MySQL is the source of truth for both app and tests (tests use isolated `laravel_test`).
+- Seed data is for development/demo convenience and can be reset during setup.
+
+## Caching Strategy
+
+Caching is intentional in this project and should be documented.
+
+- `GET /cars` caches the list under `cars_paginated` for 3600 seconds.
+- `GET /inspections` caches by filter key: `inspections_all` or `inspections_{carId}` for 3600 seconds.
+- `POST /cars` invalidates `cars_paginated`.
+- `POST /inspections` invalidates `inspections_all` and the specific `inspections_{carId}` key.
+- Tests in `tests/Feature/CachingTest.php` verify cache hits, key separation, and invalidation.
+
+## Instructions For Running This Solution
+
+### Docker (Recommended)
+
+```bash
+./setup.sh          # Build, start, reset DB, and seed data
+./test.sh           # Run full automated test suite
+./setdown.sh        # Stop containers
+```
+
+### Local (No Docker)
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan test
 ```
 
 ### Test Coverage
