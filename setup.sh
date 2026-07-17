@@ -50,15 +50,10 @@ echo "📦 Checking Redis..."
 docker exec cars_redis redis-cli ping > /dev/null 2>&1
 echo "   ✓ Redis is ready"
 
-# Run database migrations
+# Rebuild database from scratch and seed deterministic demo data
 echo ""
-echo "🗄️  Running database migrations..."
-docker exec cars_app php artisan migrate --force
-
-# Run database seeders
-echo ""
-echo "🌱 Seeding database..."
-docker exec cars_app php artisan db:seed --force
+echo "🗄️  Resetting database and seeding..."
+docker exec cars_app php artisan migrate:fresh --seed --force
 
 echo ""
 echo "✅ Setup complete!"
