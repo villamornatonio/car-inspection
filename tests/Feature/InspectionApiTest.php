@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class InspectionApiTest extends TestCase
@@ -80,7 +81,7 @@ class InspectionApiTest extends TestCase
         $mock = Mockery::mock(InspectionService::class);
         $mock->shouldReceive('create')
             ->once()
-            ->andThrow(new \RuntimeException('Inspection repository unavailable'));
+            ->andThrow(new RuntimeException('Inspection repository unavailable'));
         $this->app->instance(InspectionService::class, $mock);
 
         $response = $this->postJson('/api/v1/inspections', [

@@ -4,13 +4,14 @@ namespace Tests\Feature;
 
 use App\Jobs\CreateCarJob;
 use App\Models\User;
+use App\Services\CarService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
+use RuntimeException;
 use Tests\TestCase;
-use App\Services\CarService;
 
 class CarApiTest extends TestCase
 {
@@ -85,7 +86,7 @@ class CarApiTest extends TestCase
         $mock = Mockery::mock(CarService::class);
         $mock->shouldReceive('createAsync')
             ->once()
-            ->andThrow(new \RuntimeException('Queue unavailable'));
+            ->andThrow(new RuntimeException('Queue unavailable'));
         $this->app->instance(CarService::class, $mock);
 
         $response = $this->postJson('/api/v1/cars', [
